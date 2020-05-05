@@ -127,6 +127,7 @@ setnames(education, old = c("RaumSort", "Obligatorische Schule", "Sekundarstufe 
 
 dogs2020 <- merge(dogs2020, education, by = "DISTRICT", all.x = T)
 
+rm(education)
 
 #######################
 # IMPORTING HOME_TYPE #
@@ -139,8 +140,26 @@ home_type <- data.table(read_csv("data_sources/bau_best_geb_whg_bev_gebaeudeart_
 home_type <- home_type[Jahr == 2019,]
 
 
+home_type <- home_type[, sum(AnzGeb), by = list(QuarSort,GbdArtPubName)]
+
+#renaming for merge
+setnames(home_type, old = c("QuarSort", "GbdArtPubName", "V1"), 
+         new = c("DISTRICT", "Hometype", "Number_homes"))
+
+### long to wide hometype reshape
+home_type <-dcast(home_type, DISTRICT ~ Hometype, value.var = "Number_homes")
+
+#removing unnececesary column
+dogs2020[, Unbekannt:=NULL]
+
+#merging
+dogs2020 <- merge(dogs2020, home_type, by = "DISTRICT", all.x = T)
+
+rm(home_type)
 
 
-
+###################
+# saving to excel #
+###################
 
 write.xlsx(dogs2020, "dogs2020_merged.xlsx")
