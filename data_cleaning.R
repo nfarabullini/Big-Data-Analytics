@@ -149,6 +149,10 @@ setnames(home_type, old = c("QuarSort", "GbdArtPubName", "V1"),
 ### long to wide hometype reshape
 home_type <-dcast(home_type, DISTRICT ~ Hometype, value.var = "Number_homes")
 
+# translate hometype
+setnames(home_type, old = c("Produktions- und Lagergebäude", "Mehrfamilienhäuser", "Einfamilienhäuser"), 
+         new = c("Factories and warehouses", "Apartments", "Family houses"))
+
 #removing unnececesary column
 dogs2020[, Unbekannt:=NULL]
 
