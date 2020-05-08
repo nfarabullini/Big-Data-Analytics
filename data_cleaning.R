@@ -150,8 +150,8 @@ setnames(home_type, old = c("QuarSort", "GbdArtPubName", "V1"),
 home_type <-dcast(home_type, DISTRICT ~ Hometype, value.var = "Number_homes")
 
 # translate hometype
-setnames(home_type, old = c("Produktions- und Lagergebäude", "Mehrfamilienhäuser", "Einfamilienhäuser"), 
-         new = c("Factories and warehouses", "Apartments", "Family houses"))
+setnames(home_type, old = c("Produktions- und Lagergebäude", "Mehrfamilienhäuser", "Einfamilienhäuser", "Infrastrukturgebäude", "Kleingebäude", "Kommerzielle Gebäude", "Spezielle Wohngebäude"), 
+         new = c("Factories and warehouses", "Apartments", "Family houses", "Infrastrukturgebäude", "Kleingebäude", "Commercial buildings", "Spezielle Wohngebäude"))
 
 #removing unnececesary column
 home_type[, Unbekannt:=NULL]
