@@ -154,7 +154,7 @@ setnames(home_type, old = c("Produktions- und Lagergebäude", "Mehrfamilienhäus
          new = c("Factories and warehouses", "Apartments", "Family houses"))
 
 #removing unnececesary column
-dogs2020[, Unbekannt:=NULL]
+home_type[, Unbekannt:=NULL]
 
 #merging
 dogs2020 <- merge(dogs2020, home_type, by = "DISTRICT", all.x = T)
