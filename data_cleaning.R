@@ -1,6 +1,7 @@
 library(readr)
 library(data.table)
 library(xlsx)
+library(dplyr)
 
 # this removes all variables, usefull if we rerun code to keep it clean
 rm(list=ls())
@@ -41,7 +42,6 @@ dogs2020 <- merge(dogs2020,district_names , by = "DISTRICT", all.x = T)
 #remove unused variables
 rm(district_names)
 
-
 ####################
 # IMPORTING WEALTH #
 ####################
@@ -71,7 +71,6 @@ setnames(wealth_merge, old = c("V1", "QuarSort")
 #merge income into dogs dataset
 dogs2020 <- merge(dogs2020, wealth_merge, by = "DISTRICT", all.x = T)
 # ATTENTION! FYI: not for all districts we have wealth values! 
-
 
 #get rid of unused data
 rm(wealth, wealth_merge)
@@ -106,12 +105,8 @@ setnames(income_merge, old = c("V1", "QuarSort")
 dogs2020 <- merge(dogs2020, income_merge, by = "DISTRICT", all.x = T)
 # ATTENTION! FYI: not for all districts we have income values! 
 
-
 #get rid of unused data
 rm(income, income_merge)
-
-
-
 
 #######################
 # IMPORTING EDUCATION #
@@ -124,7 +119,6 @@ education <-dcast(education, RaumSort ~ Bildungsstand, value.var = "AntBev")
 setnames(education, old = c("RaumSort", "Obligatorische Schule", "Sekundarstufe II", "Tertiärstufe"), 
                     new = c("DISTRICT", "Basic_school %", "Gymnasium %", "University %"))
 
-
 dogs2020 <- merge(dogs2020, education, by = "DISTRICT", all.x = T)
 
 rm(education)
@@ -133,12 +127,10 @@ rm(education)
 # IMPORTING HOME_TYPE #
 #######################
 
-
 home_type <- data.table(read_csv("data_sources/bau_best_geb_whg_bev_gebaeudeart_quartier_seit2008.csv")) 
 
 # we dont have date for 2020, the freshest data is on 2019
 home_type <- home_type[Jahr == 2019,]
-
 
 home_type <- home_type[, sum(AnzGeb), by = list(QuarSort,GbdArtPubName)]
 
@@ -161,9 +153,43 @@ dogs2020 <- merge(dogs2020, home_type, by = "DISTRICT", all.x = T)
 
 rm(home_type)
 
-
 ###################
 # saving to excel #
 ###################
 
-write.xlsx(dogs2020, "dogs2020_merged.xlsx")
+#write.xlsx(dogs2020, "dogs2020_merged.xlsx")
+
+#######################
+# Investigation - CB  #
+#######################
+
+# First let's investigate the top of the Question Tree - Who Has a Dog
+
+# Relevant Columns w. Duplicates Removed
+district_dog <- unique(subset(dogs2020, select=c("DISTRICT","OWNER_ID")))
+# Count them - Nikki, Would love you to show me how to make your pretty map
+district_dog_count <- aggregate(OWNER_ID ~ DISTRICT, data = district_dog, FUN = function(x){NROW(x)})
+
+# Data Artifact - Dog w. District "8" Typographical Error? We Remove. Good example of Data Cleaning. 
+district_dog_count <- district_dog_count[(district_dog_count$DISTRICT!=8), ]
+
+# Usability
+ddc <- district_dog_count
+
+# Aggregate Back in to Higher Order Regions
+# Okay, I'm sorry, there is probably a better way to do this, I am brand new to R
+ddc$DISTRICT <- ifelse(ddc$DISTRICT %in% c('11', '12', '13', '14'), '1', ddc$DISTRICT)
+ddc$DISTRICT <- ifelse(ddc$DISTRICT %in% c('21', '23', '24'), '2', ddc$DISTRICT)
+ddc$DISTRICT <- ifelse(ddc$DISTRICT %in% c('31', '33', '34'), '3', ddc$DISTRICT)
+ddc$DISTRICT <- ifelse(ddc$DISTRICT %in% c('41', '42', '44'), '4', ddc$DISTRICT)
+ddc$DISTRICT <- ifelse(ddc$DISTRICT %in% c('51', '52'), '5', ddc$DISTRICT)
+ddc$DISTRICT <- ifelse(ddc$DISTRICT %in% c('61', '63'), '6', ddc$DISTRICT)
+ddc$DISTRICT <- ifelse(ddc$DISTRICT %in% c('71', '72', '73', '74'), '7', ddc$DISTRICT)
+ddc$DISTRICT <- ifelse(ddc$DISTRICT %in% c('81', '82', '83'), '8', ddc$DISTRICT)
+ddc$DISTRICT <- ifelse(ddc$DISTRICT %in% c('91', '92'), '9', ddc$DISTRICT)
+ddc$DISTRICT <- ifelse(ddc$DISTRICT %in% c('101', '102'), '10', ddc$DISTRICT)
+ddc$DISTRICT <- ifelse(ddc$DISTRICT %in% c('111', '115', '119'), '11', ddc$DISTRICT)
+ddc$DISTRICT <- ifelse(ddc$DISTRICT %in% c('121', '122', '123'), '12', ddc$DISTRICT)
+
+ddc <- aggregate(ddc$OWNER_ID, by=list(DISTRICT=ddc$DISTRICT), FUN=sum)
+
