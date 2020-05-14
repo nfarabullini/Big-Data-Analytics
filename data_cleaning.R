@@ -193,3 +193,5 @@ ddc$DISTRICT <- ifelse(ddc$DISTRICT %in% c('121', '122', '123'), '12', ddc$DISTR
 
 ddc <- aggregate(ddc$OWNER_ID, by=list(DISTRICT=ddc$DISTRICT), FUN=sum)
 
+# To Be Continued, We are now still at the top of the question Tree
+# There should be some discussion on a proper regression model as per Andris' original thoughts
