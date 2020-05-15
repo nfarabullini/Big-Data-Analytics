@@ -238,3 +238,28 @@ ddc <- aggregate(ddc$OWNER_ID, by=list(DISTRICT=ddc$DISTRICT), FUN=sum)
 
 # To Be Continued, We are now still at the top of the question Tree
 # There should be some discussion on a proper regression model as per Andris' original thoughts
+
+######################################
+# Owner Age - Dog Breed Relationship #
+######################################
+
+# Generate breeds table for totals
+breeds <- table(breed=dogs2020$BREED, age=dogs2020$AGE) %>%
+          cbind(total = rowSums(breeds)) %>%
+          as.data.frame()
+
+# Use pie charts to visualise
+par(mfrow = c(2,5))
+pie(breeds$`11-20`, dogs2020$BREED)
+pie(breeds$`21-30`, dogs2020$BREED)
+pie(breeds$`31-40`, dogs2020$BREED)
+pie(breeds$`41-50`, dogs2020$BREED)
+pie(breeds$`51-60`, dogs2020$BREED)
+pie(breeds$`61-70`, dogs2020$BREED)
+pie(breeds$`71-80`, dogs2020$BREED)
+pie(breeds$`81-90`, dogs2020$BREED)
+pie(breeds$`91-100`, dogs2020$BREED)
+pie(breeds$total, dogs2020$BREED)
+
+# Delete generated table
+rm(breeds)
