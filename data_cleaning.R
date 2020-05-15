@@ -244,8 +244,8 @@ ddc <- aggregate(ddc$OWNER_ID, by=list(DISTRICT=ddc$DISTRICT), FUN=sum)
 ######################################
 
 # Generate breeds table for totals
-breeds <- table(breed=dogs2020$BREED, age=dogs2020$AGE) %>%
-          cbind(total = rowSums(breeds)) %>%
+breeds <- table(breed=dogs2020$BREED, age=dogs2020$AGE)
+breeds <- cbind(breeds, total = rowSums(breeds)) %>%
           as.data.frame()
 
 # Use pie charts to visualise
