@@ -250,16 +250,16 @@ breeds <- cbind(breeds, total = rowSums(breeds)) %>%
 
 # Use pie charts to visualise
 par(mfrow = c(2,5))
-pie(breeds$`11-20`, dogs2020$BREED)
-pie(breeds$`21-30`, dogs2020$BREED)
-pie(breeds$`31-40`, dogs2020$BREED)
-pie(breeds$`41-50`, dogs2020$BREED)
-pie(breeds$`51-60`, dogs2020$BREED)
-pie(breeds$`61-70`, dogs2020$BREED)
-pie(breeds$`71-80`, dogs2020$BREED)
-pie(breeds$`81-90`, dogs2020$BREED)
-pie(breeds$`91-100`, dogs2020$BREED)
-pie(breeds$total, dogs2020$BREED)
+pie(breeds$`11-20`, dogs2020$BREED, main="11-20")
+pie(breeds$`21-30`, dogs2020$BREED, main="21-30")
+pie(breeds$`31-40`, dogs2020$BREED, main="31-40")
+pie(breeds$`41-50`, dogs2020$BREED, main="41-50")
+pie(breeds$`51-60`, dogs2020$BREED, main="51-60")
+pie(breeds$`61-70`, dogs2020$BREED, main="61-70")
+pie(breeds$`71-80`, dogs2020$BREED, main="71-80")
+pie(breeds$`81-90`, dogs2020$BREED, main="81-90")
+pie(breeds$`91-100`, dogs2020$BREED, main="91-100")
+pie(breeds$total, dogs2020$BREED, main="All ages")
 
 # Delete generated table
 rm(breeds)
