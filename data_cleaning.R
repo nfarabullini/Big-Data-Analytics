@@ -1,6 +1,7 @@
 library(readr)
 library(data.table)
 library(xlsx)
+library(RYandexTranslate)
 
 # this removes all variables, usefull if we rerun code to keep it clean
 rm(list=ls())
@@ -161,6 +162,48 @@ dogs2020 <- merge(dogs2020, home_type, by = "DISTRICT", all.x = T)
 
 rm(home_type)
 
+
+
+
+
+### package fix
+translate = function (api_key, text = "", lang = "") 
+{
+  url = "https://translate.yandex.net/api/v1.5/tr.json/translate?"
+  url = paste(url, "key=", api_key, sep = "")
+  if (text != "") {
+    url = paste(url, "&text=", text, sep = "")
+  }
+  if (lang != "") {
+    url = paste(url, "&lang=", lang, sep = "")
+  }
+  url = gsub(pattern = " ", replacement = "%20", x = url)
+  d = RCurl::getURL(url, ssl.verifyhost = 0L, ssl.verifypeer = 0L)
+  d = jsonlite::fromJSON(d)
+  d$code = NULL
+  d
+}
+
+api_key <- "trnsl.1.1.20200515T134653Z.f9fb709ac3e94036.783aefa609692b463a79b5827d5c0e7f2d037a8c"
+
+column_list <- c("BREED", "COLOR_DOG", "DISTRICT_NAME")
+
+for (column_names in column_list) {
+  unique_values <- unique(dogs2020[,get(column_names)])
+for (unique_num in 1:length(unique_values)) {
+  
+  #debug
+  print(column_names)
+  print(paste(unique_num, " out of ", length(unique_values)))
+  
+  
+  dogs2020[dogs2020[,get(column_names)] == unique_values[unique_num],
+           eval(column_names) := translate(api_key,text=unique_values[unique_num],lang="de-en")$text]
+
+}}
+
+dogs2020[SEX == "w",SEX := "f"]
+dogs2020[SEX_DOG == "w",SEX_DOG := "f"]
 
 ###################
 # saving to excel #
