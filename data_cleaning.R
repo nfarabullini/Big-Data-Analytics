@@ -1,6 +1,7 @@
 library(readr)
 library(data.table)
 library(xlsx)
+library(RYandexTranslate)
 library(dplyr)
 
 # this removes all variables, usefull if we rerun code to keep it clean
@@ -153,6 +154,48 @@ dogs2020 <- merge(dogs2020, home_type, by = "DISTRICT", all.x = T)
 
 rm(home_type)
 
+
+
+
+### package fix
+translate = function (api_key, text = "", lang = "") 
+{
+  url = "https://translate.yandex.net/api/v1.5/tr.json/translate?"
+  url = paste(url, "key=", api_key, sep = "")
+  if (text != "") {
+    url = paste(url, "&text=", text, sep = "")
+  }
+  if (lang != "") {
+    url = paste(url, "&lang=", lang, sep = "")
+  }
+  url = gsub(pattern = " ", replacement = "%20", x = url)
+  d = RCurl::getURL(url, ssl.verifyhost = 0L, ssl.verifypeer = 0L)
+  d = jsonlite::fromJSON(d)
+  d$code = NULL
+  d
+}
+
+api_key <- "trnsl.1.1.20200515T134653Z.f9fb709ac3e94036.783aefa609692b463a79b5827d5c0e7f2d037a8c"
+
+column_list <- c("BREED", "COLOR_DOG", "DISTRICT_NAME")
+
+for (column_names in column_list) {
+  unique_values <- unique(dogs2020[,get(column_names)])
+for (unique_num in 1:length(unique_values)) {
+  
+  #debug
+  print(column_names)
+  print(paste(unique_num, " out of ", length(unique_values)))
+  
+  
+  dogs2020[dogs2020[,get(column_names)] == unique_values[unique_num],
+           eval(column_names) := translate(api_key,text=unique_values[unique_num],lang="de-en")$text]
+
+}}
+
+dogs2020[SEX == "w",SEX := "f"]
+dogs2020[SEX_DOG == "w",SEX_DOG := "f"]
+
 ###################
 # saving to excel #
 ###################
@@ -195,3 +238,28 @@ ddc <- aggregate(ddc$OWNER_ID, by=list(DISTRICT=ddc$DISTRICT), FUN=sum)
 
 # To Be Continued, We are now still at the top of the question Tree
 # There should be some discussion on a proper regression model as per Andris' original thoughts
+
+######################################
+# Owner Age - Dog Breed Relationship #
+######################################
+
+# Generate breeds table for totals
+breeds <- table(breed=dogs2020$BREED, age=dogs2020$AGE)
+breeds <- cbind(breeds, total = rowSums(breeds)) %>%
+          as.data.frame()
+
+# Use pie charts to visualise
+par(mfrow = c(2,5))
+pie(breeds$`11-20`, dogs2020$BREED, main="11-20")
+pie(breeds$`21-30`, dogs2020$BREED, main="21-30")
+pie(breeds$`31-40`, dogs2020$BREED, main="31-40")
+pie(breeds$`41-50`, dogs2020$BREED, main="41-50")
+pie(breeds$`51-60`, dogs2020$BREED, main="51-60")
+pie(breeds$`61-70`, dogs2020$BREED, main="61-70")
+pie(breeds$`71-80`, dogs2020$BREED, main="71-80")
+pie(breeds$`81-90`, dogs2020$BREED, main="81-90")
+pie(breeds$`91-100`, dogs2020$BREED, main="91-100")
+pie(breeds$total, dogs2020$BREED, main="All ages")
+
+# Delete generated table
+rm(breeds)
