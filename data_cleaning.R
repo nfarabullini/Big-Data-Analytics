@@ -3,6 +3,7 @@ library(data.table)
 library(xlsx)
 library(RYandexTranslate)
 library(dplyr)
+library(stringr)
 
 # this removes all variables, usefull if we rerun code to keep it clean
 rm(list=ls())
@@ -15,16 +16,19 @@ rm(list=ls())
 # https://data.stadt-zuerich.ch/dataset/sid_stapo_hundebestand/resource/a05e2101-7997-4bb5-bed8-c5a61cfffdcf
 dogs2020 <- data.table(read_csv("data_sources/20200306_hundehalter.csv"))
 
+# Data Artifact - Dog w. District "8" Typographical Error? We Remove. Good example of Data Cleaning. 
+dogs2020 <- dogs2020[(dogs2020$STADTQUARTIER!=8), ]
+
 #removing unnececesary columns
-dogs2020[, c("STADTKREIS","RASSE1_MISCHLING", "RASSE2", "RASSE2_MISCHLING"):=NULL]
+dogs2020[, c("RASSE1_MISCHLING", "RASSE2", "RASSE2_MISCHLING"):=NULL]
 
 #if a row has a NA entry in one of the cells, remove the entire row
 dogs2020 <- na.omit(dogs2020)
 # 0 rows ommited, still leave the code in place in case we change data basis.
 
 #rename columns
-setnames(dogs2020, old = c("HALTER_ID", "ALTER", "GESCHLECHT", "STADTQUARTIER", "RASSE1", "RASSENTYP", "GEBURTSJAHR_HUND", "GESCHLECHT_HUND", "HUNDEFARBE")
-                  , new = c("OWNER_ID", "AGE", "SEX", "DISTRICT", "BREED", "BREEDTYPE", "YOB_DOG", "SEX_DOG", "COLOR_DOG"))
+setnames(dogs2020, old = c("HALTER_ID", "ALTER", "GESCHLECHT", "STADTQUARTIER", "STADTKREIS", "RASSE1", "RASSENTYP", "GEBURTSJAHR_HUND", "GESCHLECHT_HUND", "HUNDEFARBE")
+                  , new = c("OWNER_ID", "AGE", "SEX", "DISTRICT", "DISTRICT_BIG", "BREED", "BREEDTYPE", "YOB_DOG", "SEX_DOG", "COLOR_DOG"))
 
 
 #couse stadtquartier is more granular district segemntation than stadtkreis, and not all datasets
@@ -154,129 +158,83 @@ dogs2020 <- merge(dogs2020, home_type, by = "DISTRICT", all.x = T)
 
 rm(home_type)
 
+########################
+# IMPORTING POPULATION #
+########################
 
+# Import Population Figures
+pop_per_district <- data.table(read_csv("data_sources/2019-Table_1.csv"))
 
+# Remove Irrelevant Rows
+pop_per_district <- pop_per_district[8:nrow(pop_per_district)]
+
+# Inject Column Name to Replace N/A
+pop_per_district[1,1] <- "DISTRICT_NAME"
+
+# Set Column Names
+setnames(pop_per_district, as.character(pop_per_district[1, ]))
+
+# Remove Duplicate Rows
+pop_per_district <- pop_per_district[2:nrow(pop_per_district)]
+
+# Join By District Name (Perfect Match, No N/A's)
+dogs2020 <- merge(dogs2020, pop_per_district, by = "DISTRICT_NAME", all.x = T)
+
+# Renaming
+setnames(dogs2020, old = c("Total", "Schweizer/-innen", "Ausländer/-innen", "Anteil ausländische\nBevölkerung (%)")
+         , new = c("TOTAL_POPULATION", "SWISS_POPULATION", "FOREIGN_POPULATION", "FOREIGN_POPULATION_PERCENTAGE"))
+
+# Cast TOTAL_POPULATION as Integer
+dogs2020$TOTAL_POPULATION <- str_replace_all(dogs2020$TOTAL_POPULATION, " ", "")
+dogs2020$TOTAL_POPULATION <- as.numeric(dogs2020$TOTAL_POPULATION)
+
+#######################
+#     TRANSLATION     #
+#######################
 
 ### package fix
-#translate = function (api_key, text = "", lang = "") 
-#{
-#  url = "https://translate.yandex.net/api/v1.5/tr.json/translate?"
-#  url = paste(url, "key=", api_key, sep = "")
-#  if (text != "") {
-#    url = paste(url, "&text=", text, sep = "")
-#  }
-# if (lang != "") {
-#    url = paste(url, "&lang=", lang, sep = "")
-#  }
-#  url = gsub(pattern = " ", replacement = "%20", x = url)
-#  d = RCurl::getURL(url, ssl.verifyhost = 0L, ssl.verifypeer = 0L)
-#  d = jsonlite::fromJSON(d)
-#  d$code = NULL
-#  d
-#}
+translate = function (api_key, text = "", lang = "") 
+{
+  url = "https://translate.yandex.net/api/v1.5/tr.json/translate?"
+  url = paste(url, "key=", api_key, sep = "")
+  if (text != "") {
+    url = paste(url, "&text=", text, sep = "")
+  }
+ if (lang != "") {
+    url = paste(url, "&lang=", lang, sep = "")
+  }
+  url = gsub(pattern = " ", replacement = "%20", x = url)
+  d = RCurl::getURL(url, ssl.verifyhost = 0L, ssl.verifypeer = 0L)
+  d = jsonlite::fromJSON(d)
+  d$code = NULL
+  d
+}
 
-#api_key <- "trnsl.1.1.20200515T134653Z.f9fb709ac3e94036.783aefa609692b463a79b5827d5c0e7f2d037a8c"
+api_key <- "trnsl.1.1.20200515T134653Z.f9fb709ac3e94036.783aefa609692b463a79b5827d5c0e7f2d037a8c"
 
-#column_list <- c("BREED", "COLOR_DOG", "DISTRICT_NAME")
+column_list <- c("BREED", "COLOR_DOG", "DISTRICT_NAME")
 
-#for (column_names in column_list) {
-#  unique_values <- unique(dogs2020[,get(column_names)])
-#for (unique_num in 1:length(unique_values)) {
+for (column_names in column_list) {
+  unique_values <- unique(dogs2020[,get(column_names)])
+for (unique_num in 1:length(unique_values)) {
   
-#  #debug
-#  print(column_names)
-#  print(paste(unique_num, " out of ", length(unique_values)))
+  #debug
+  print(column_names)
+  print(paste(unique_num, " out of ", length(unique_values)))
   
   
-#  dogs2020[dogs2020[,get(column_names)] == unique_values[unique_num],
-#           eval(column_names) := translate(api_key,text=unique_values[unique_num],lang="de-en")$text]
+  dogs2020[dogs2020[,get(column_names)] == unique_values[unique_num],
+           eval(column_names) := translate(api_key,text=unique_values[unique_num],lang="de-en")$text]
 
-#}}
+}}
 
-#dogs2020[SEX == "w",SEX := "f"]
-#dogs2020[SEX_DOG == "w",SEX_DOG := "f"]
+dogs2020[SEX == "w",SEX := "f"]
+dogs2020[SEX_DOG == "w",SEX_DOG := "f"]
+
+save.image("dogs.Rdata")
 
 ###################
 # saving to excel #
 ###################
 
 #write.xlsx(dogs2020, "dogs2020_merged.xlsx")
-
-#######################
-# Investigation - CB  #
-#######################
-
-# First let's investigate the top of the Question Tree - Who Has a Dog
-
-# Relevant Columns w. Duplicates Removed
-district_dog <- unique(subset(dogs2020, select=c("DISTRICT","OWNER_ID")))
-
-# Count them - Nikki, Would love you to show me how to make your pretty map
-district_dog_count <- aggregate(OWNER_ID ~ DISTRICT, data = district_dog, FUN = function(x){NROW(x)})
-
-# Data Artifact - Dog w. District "8" Typographical Error? We Remove. Good example of Data Cleaning. 
-district_dog_count <- district_dog_count[(district_dog_count$DISTRICT!=8), ]
-
-# Usability
-ddc <- district_dog_count
-
-# Aggregate Back in to Higher Order Regions
-# Okay, I'm sorry, there is probably a better way to do this, I am brand new to R
-ddc$DISTRICT <- ifelse(ddc$DISTRICT %in% c('11', '12', '13', '14'), '1', ddc$DISTRICT)
-ddc$DISTRICT <- ifelse(ddc$DISTRICT %in% c('21', '23', '24'), '2', ddc$DISTRICT)
-ddc$DISTRICT <- ifelse(ddc$DISTRICT %in% c('31', '33', '34'), '3', ddc$DISTRICT)
-ddc$DISTRICT <- ifelse(ddc$DISTRICT %in% c('41', '42', '44'), '4', ddc$DISTRICT)
-ddc$DISTRICT <- ifelse(ddc$DISTRICT %in% c('51', '52'), '5', ddc$DISTRICT)
-ddc$DISTRICT <- ifelse(ddc$DISTRICT %in% c('61', '63'), '6', ddc$DISTRICT)
-ddc$DISTRICT <- ifelse(ddc$DISTRICT %in% c('71', '72', '73', '74'), '7', ddc$DISTRICT)
-ddc$DISTRICT <- ifelse(ddc$DISTRICT %in% c('81', '82', '83'), '8', ddc$DISTRICT)
-ddc$DISTRICT <- ifelse(ddc$DISTRICT %in% c('91', '92'), '9', ddc$DISTRICT)
-ddc$DISTRICT <- ifelse(ddc$DISTRICT %in% c('101', '102'), '10', ddc$DISTRICT)
-ddc$DISTRICT <- ifelse(ddc$DISTRICT %in% c('111', '115', '119'), '11', ddc$DISTRICT)
-ddc$DISTRICT <- ifelse(ddc$DISTRICT %in% c('121', '122', '123'), '12', ddc$DISTRICT)
-
-# Aggregate and Rename Column
-ddc <- aggregate(ddc$OWNER_ID, by=list(DISTRICT=ddc$DISTRICT), FUN=sum)
-colnames(ddc)[1] <- "district"
-colnames(ddc)[2] <- "owner_count"
-
-# Population Figures
-pop_per_district <- data.table(read_csv("data_sources/2019-Table 1.csv")) 
-
-# Manual Solution -CB
-district <- c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)
-pop <- c(5791, 35035, 51122, 29368, 15750, 34794, 38584, 17060, 56637, 40832, 75804, 33231)
-d_pop <- data.frame(district=district, pop=pop)
-
-# Merge
-ddc_pop <- merge(ddc, d_pop, by = "district", all.x = T)
-ddc_pop$difference <- ddc_pop$pop - ddc_pop$owner_count
-ddc_pop$percent_owner <- ddc_pop$owner_count / ddc_pop$pop
-
-# Remove
-rm(d_pop)
-
-######################################
-# Owner Age - Dog Breed Relationship #
-######################################
-
-# Generate breeds table for totals
-breeds <- table(breed=dogs2020$BREED, age=dogs2020$AGE)
-breeds <- cbind(breeds, total = rowSums(breeds)) %>%
-          as.data.frame()
-
-# Use pie charts to visualise
-par(mfrow = c(2,5))
-pie(breeds$`11-20`, dogs2020$BREED, main="11-20")
-pie(breeds$`21-30`, dogs2020$BREED, main="21-30")
-pie(breeds$`31-40`, dogs2020$BREED, main="31-40")
-pie(breeds$`41-50`, dogs2020$BREED, main="41-50")
-pie(breeds$`51-60`, dogs2020$BREED, main="51-60")
-pie(breeds$`61-70`, dogs2020$BREED, main="61-70")
-pie(breeds$`71-80`, dogs2020$BREED, main="71-80")
-pie(breeds$`81-90`, dogs2020$BREED, main="81-90")
-pie(breeds$`91-100`, dogs2020$BREED, main="91-100")
-pie(breeds$total, dogs2020$BREED, main="All ages")
-
-# Delete generated table
-rm(breeds)
