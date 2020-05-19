@@ -42,7 +42,7 @@ district_names <- unique(district_names[, QuarSort, QuarLang])
 setnames(district_names, old = c("QuarSort", "QuarLang")
          , new = c("DISTRICT", "DISTRICT_NAME"))
 
-dogs2020 <- merge(dogs2020,district_names , by = "DISTRICT", all.x = T)
+dogs2020 <- merge(dogs2020, district_names , by = "DISTRICT", all.x = T)
 
 #remove unused variables
 rm(district_names)
@@ -217,7 +217,7 @@ translate = function (api_key, text = "", lang = "")
 
 api_key <- "trnsl.1.1.20200515T134653Z.f9fb709ac3e94036.783aefa609692b463a79b5827d5c0e7f2d037a8c"
 
-column_list <- c("BREED", "COLOR_DOG", "DISTRICT_NAME")
+column_list <- c("BREED", "COLOR_DOG")
 
 for (column_names in column_list) {
   unique_values <- unique(dogs2020[,get(column_names)])
