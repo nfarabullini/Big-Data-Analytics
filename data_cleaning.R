@@ -158,43 +158,43 @@ rm(home_type)
 
 
 ### package fix
-translate = function (api_key, text = "", lang = "") 
-{
-  url = "https://translate.yandex.net/api/v1.5/tr.json/translate?"
-  url = paste(url, "key=", api_key, sep = "")
-  if (text != "") {
-    url = paste(url, "&text=", text, sep = "")
-  }
-  if (lang != "") {
-    url = paste(url, "&lang=", lang, sep = "")
-  }
-  url = gsub(pattern = " ", replacement = "%20", x = url)
-  d = RCurl::getURL(url, ssl.verifyhost = 0L, ssl.verifypeer = 0L)
-  d = jsonlite::fromJSON(d)
-  d$code = NULL
-  d
-}
+#translate = function (api_key, text = "", lang = "") 
+#{
+#  url = "https://translate.yandex.net/api/v1.5/tr.json/translate?"
+#  url = paste(url, "key=", api_key, sep = "")
+#  if (text != "") {
+#    url = paste(url, "&text=", text, sep = "")
+#  }
+# if (lang != "") {
+#    url = paste(url, "&lang=", lang, sep = "")
+#  }
+#  url = gsub(pattern = " ", replacement = "%20", x = url)
+#  d = RCurl::getURL(url, ssl.verifyhost = 0L, ssl.verifypeer = 0L)
+#  d = jsonlite::fromJSON(d)
+#  d$code = NULL
+#  d
+#}
 
-api_key <- "trnsl.1.1.20200515T134653Z.f9fb709ac3e94036.783aefa609692b463a79b5827d5c0e7f2d037a8c"
+#api_key <- "trnsl.1.1.20200515T134653Z.f9fb709ac3e94036.783aefa609692b463a79b5827d5c0e7f2d037a8c"
 
-column_list <- c("BREED", "COLOR_DOG", "DISTRICT_NAME")
+#column_list <- c("BREED", "COLOR_DOG", "DISTRICT_NAME")
 
-for (column_names in column_list) {
-  unique_values <- unique(dogs2020[,get(column_names)])
-for (unique_num in 1:length(unique_values)) {
+#for (column_names in column_list) {
+#  unique_values <- unique(dogs2020[,get(column_names)])
+#for (unique_num in 1:length(unique_values)) {
   
-  #debug
-  print(column_names)
-  print(paste(unique_num, " out of ", length(unique_values)))
+#  #debug
+#  print(column_names)
+#  print(paste(unique_num, " out of ", length(unique_values)))
   
   
-  dogs2020[dogs2020[,get(column_names)] == unique_values[unique_num],
-           eval(column_names) := translate(api_key,text=unique_values[unique_num],lang="de-en")$text]
+#  dogs2020[dogs2020[,get(column_names)] == unique_values[unique_num],
+#           eval(column_names) := translate(api_key,text=unique_values[unique_num],lang="de-en")$text]
 
-}}
+#}}
 
-dogs2020[SEX == "w",SEX := "f"]
-dogs2020[SEX_DOG == "w",SEX_DOG := "f"]
+#dogs2020[SEX == "w",SEX := "f"]
+#dogs2020[SEX_DOG == "w",SEX_DOG := "f"]
 
 ###################
 # saving to excel #
@@ -210,6 +210,7 @@ dogs2020[SEX_DOG == "w",SEX_DOG := "f"]
 
 # Relevant Columns w. Duplicates Removed
 district_dog <- unique(subset(dogs2020, select=c("DISTRICT","OWNER_ID")))
+
 # Count them - Nikki, Would love you to show me how to make your pretty map
 district_dog_count <- aggregate(OWNER_ID ~ DISTRICT, data = district_dog, FUN = function(x){NROW(x)})
 
@@ -234,10 +235,26 @@ ddc$DISTRICT <- ifelse(ddc$DISTRICT %in% c('101', '102'), '10', ddc$DISTRICT)
 ddc$DISTRICT <- ifelse(ddc$DISTRICT %in% c('111', '115', '119'), '11', ddc$DISTRICT)
 ddc$DISTRICT <- ifelse(ddc$DISTRICT %in% c('121', '122', '123'), '12', ddc$DISTRICT)
 
+# Aggregate and Rename Column
 ddc <- aggregate(ddc$OWNER_ID, by=list(DISTRICT=ddc$DISTRICT), FUN=sum)
+colnames(ddc)[1] <- "district"
+colnames(ddc)[2] <- "owner_count"
 
-# To Be Continued, We are now still at the top of the question Tree
-# There should be some discussion on a proper regression model as per Andris' original thoughts
+# Population Figures
+pop_per_district <- data.table(read_csv("data_sources/2019-Table 1.csv")) 
+
+# Manual Solution -CB
+district <- c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)
+pop <- c(5791, 35035, 51122, 29368, 15750, 34794, 38584, 17060, 56637, 40832, 75804, 33231)
+d_pop <- data.frame(district=district, pop=pop)
+
+# Merge
+ddc_pop <- merge(ddc, d_pop, by = "district", all.x = T)
+ddc_pop$difference <- ddc_pop$pop - ddc_pop$owner_count
+ddc_pop$percent_owner <- ddc_pop$owner_count / ddc_pop$pop
+
+# Remove
+rm(d_pop)
 
 ######################################
 # Owner Age - Dog Breed Relationship #
