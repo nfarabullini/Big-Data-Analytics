@@ -16,13 +16,6 @@ rm(district_dog)
 # Rename Column(s)
 colnames(ddc)[3] <- "TOTAL_UNIQUE_OWNERS"
 
-# This Reg-Ex Matching Function Removes all Whitespace
-ddc <- as.data.frame(apply(ddc,2,function(x)gsub('\\s+', '',x)))
-
-# Then we cast as a numeric to prepare for mathematical operations
-ddc$TOTAL_POPULATION <- as.numeric(ddc$TOTAL_POPULATION)
-ddc$TOTAL_UNIQUE_OWNERS <- as.numeric(ddc$TOTAL_UNIQUE_OWNERS)
-
 # Compute Difference
 ddc$NON_DOG_OWNERS <- ddc$TOTAL_POPULATION - ddc$TOTAL_UNIQUE_OWNERS
 ddc$PERCENT_DOG_OWNERS <- ddc$TOTAL_UNIQUE_OWNERS / ddc$TOTAL_POPULATION

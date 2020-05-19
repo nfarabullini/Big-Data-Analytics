@@ -177,6 +177,9 @@ setnames(pop_per_district, as.character(pop_per_district[1, ]))
 # Remove Duplicate Rows
 pop_per_district <- pop_per_district[2:nrow(pop_per_district)]
 
+# This Reg-Ex Matching Function Removes all Whitespace (bad data design)
+pop_per_district <- data.table(apply(pop_per_district,2,function(x)gsub('\\s+', '',x)))
+
 # Join By District Name (Perfect Match, No N/A's)
 dogs2020 <- merge(dogs2020, pop_per_district, by = "DISTRICT_NAME", all.x = T)
 
@@ -184,9 +187,11 @@ dogs2020 <- merge(dogs2020, pop_per_district, by = "DISTRICT_NAME", all.x = T)
 setnames(dogs2020, old = c("Total", "Schweizer/-innen", "Ausländer/-innen", "Anteil ausländische\nBevölkerung (%)")
          , new = c("TOTAL_POPULATION", "SWISS_POPULATION", "FOREIGN_POPULATION", "FOREIGN_POPULATION_PERCENTAGE"))
 
-# Cast TOTAL_POPULATION as Integer
-dogs2020$TOTAL_POPULATION <- str_replace_all(dogs2020$TOTAL_POPULATION, " ", "")
+# Then we cast as a numeric to prepare for mathematical operations
 dogs2020$TOTAL_POPULATION <- as.numeric(dogs2020$TOTAL_POPULATION)
+dogs2020$SWISS_POPULATION   <- as.numeric(dogs2020$SWISS_POPULATION)
+dogs2020$FOREIGN_POPULATION   <- as.numeric(dogs2020$FOREIGN_POPULATION  )
+dogs2020$FOREIGN_POPULATION_PERCENTAGE   <- as.numeric(dogs2020$FOREIGN_POPULATION_PERCENTAGE)
 
 #######################
 #     TRANSLATION     #
