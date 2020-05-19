@@ -178,7 +178,7 @@ setnames(pop_per_district, as.character(pop_per_district[1, ]))
 pop_per_district <- pop_per_district[2:nrow(pop_per_district)]
 
 # This Reg-Ex Matching Function Removes all Whitespace (bad data design)
-pop_per_district <- data.table(apply(pop_per_district,2,function(x)gsub('\\s+', '',x)))
+pop_per_district[,2:5] <- data.table(apply(pop_per_district[,2:5],2,function(x)gsub('\\s+', '',x)))
 
 # Join By District Name (Perfect Match, No N/A's)
 dogs2020 <- merge(dogs2020, pop_per_district, by = "DISTRICT_NAME", all.x = T)
