@@ -163,6 +163,7 @@ rm(home_type)
 ########################
 
 # Import Population Figures
+# https://www.stadt-zuerich.ch/prd/de/index/statistik/themen/bevoelkerung/bevoelkerungsentwicklung/kreise-und-quartiere.html#daten
 pop_per_district <- data.table(read_csv("data_sources/2019-Table_1.csv"))
 
 # Remove Irrelevant Rows
