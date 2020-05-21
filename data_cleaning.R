@@ -71,7 +71,7 @@ wealth_merge <- wealth_merge[wealth_merge$QuarSort %in% dogs2020$DISTRICT]
 
 #renaming
 setnames(wealth_merge, old = c("V1", "QuarSort")
-         , new = c("wealth (T. CHF)", "DISTRICT"))
+         , new = c("WEALTH_T_CHF", "DISTRICT"))
 
 #merge income into dogs dataset
 dogs2020 <- merge(dogs2020, wealth_merge, by = "DISTRICT", all.x = T)
@@ -104,7 +104,7 @@ income_merge <- income_merge[income_merge$QuarSort %in% dogs2020$DISTRICT]
 
 #renaming
 setnames(income_merge, old = c("V1", "QuarSort")
-         , new = c("income (T. CHF)", "DISTRICT"))
+         , new = c("INCOME_T_CHF", "DISTRICT"))
 
 #merge income into dogs dataset
 dogs2020 <- merge(dogs2020, income_merge, by = "DISTRICT", all.x = T)
@@ -122,7 +122,7 @@ education <- data.table(read_csv("data_sources/bil101od1012 (2).csv"))
 education <-dcast(education, RaumSort ~ Bildungsstand, value.var = "AntBev")
 #renaming for merge
 setnames(education, old = c("RaumSort", "Obligatorische Schule", "Sekundarstufe II", "Tertiärstufe"), 
-                    new = c("DISTRICT", "Basic_school %", "Gymnasium %", "University %"))
+                    new = c("DISTRICT", "BASIC_SCHOOL_PERCENTAGE", "GYMNASIUM_PERCENTAGE", "UNIVERSITY_PERCENTAGE"))
 
 dogs2020 <- merge(dogs2020, education, by = "DISTRICT", all.x = T)
 
