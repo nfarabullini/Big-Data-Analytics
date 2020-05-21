@@ -28,7 +28,7 @@ dogs2020 <- na.omit(dogs2020)
 
 #rename columns
 setnames(dogs2020, old = c("HALTER_ID", "ALTER", "GESCHLECHT", "STADTQUARTIER", "STADTKREIS", "RASSE1", "RASSENTYP", "GEBURTSJAHR_HUND", "GESCHLECHT_HUND", "HUNDEFARBE")
-                  , new = c("OWNER_ID", "AGE", "SEX", "DISTRICT", "DISTRICT_BIG", "BREED", "BREEDTYPE", "YOB_DOG", "SEX_DOG", "COLOR_DOG"))
+                  , new = c("OWNER_ID", "AGE", "SEX", "DISTRICT", "DISTRICT_BIG", "BREED", "BREED_TYPE", "YOB_DOG", "SEX_DOG", "COLOR_DOG"))
 
 
 #couse stadtquartier is more granular district segemntation than stadtkreis, and not all datasets
