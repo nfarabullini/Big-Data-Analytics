@@ -148,7 +148,7 @@ home_type <-dcast(home_type, DISTRICT ~ Hometype, value.var = "Number_homes")
 
 # translate hometype
 setnames(home_type, old = c("Produktions- und Lagergebäude", "Mehrfamilienhäuser", "Einfamilienhäuser", "Infrastrukturgebäude", "Kleingebäude", "Kommerzielle Gebäude", "Spezielle Wohngebäude"), 
-         new = c("Factories and warehouses", "Apartments", "Family houses", "Infrastructure buildings", "Small buildings", "Commercial buildings", "Special accommodation"))
+         new = c("FACTORIES_AND_WAREHOUSES", "APARTMENTS", "SINGLE_FAMILY_HOMES", "INFRASTRUCTURE_BUILDINGS", "SMALL_BUILDINGS", "COMMERCIAL_BUILDINGS", "SPECIAL_ACCOMODATION"))
 
 #removing unnececesary column
 home_type[, Unbekannt:=NULL]
