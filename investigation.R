@@ -1,40 +1,9 @@
+library(class)
+
 # this removes all variables, usefull if we rerun code to keep it clean
 rm(list=ls())
 
 load('dogs.RData')
-
-library(class)
-#######################
-# Investigation - CB  #
-#######################
-
-# First let's investigate the top of the Question Tree - Who Has a Dog
-
-# Relevant Columns w. Duplicates Removed
-district_dog <- unique(subset(dogs2020, select=c("OWNER_ID", "DISTRICT_NAME", "TOTAL_POPULATION")))
-
-# Aggregation - DDC District Dog Count
-ddc <- aggregate(OWNER_ID ~ DISTRICT_NAME + TOTAL_POPULATION, data = district_dog, FUN = function(x){NROW(x)})
-rm(district_dog)
-
-# Rename Column(s)
-colnames(ddc)[3] <- "TOTAL_UNIQUE_OWNERS"
-
-# Compute Difference
-ddc$NON_DOG_OWNERS <- ddc$TOTAL_POPULATION - ddc$TOTAL_UNIQUE_OWNERS
-ddc$PERCENT_DOG_OWNERS <- ddc$TOTAL_UNIQUE_OWNERS / ddc$TOTAL_POPULATION
-
-
-
-breed_filter <- data.table(aggregate(OWNER_ID ~ BREED, data = dogs2020, FUN = function(x){NROW(x)}))
-breed_filter <- breed_filter[OWNER_ID > 100]
-breed_filter <- breed_filter[OWNER_ID < 500, BREED]
-dogs2020 <- dogs2020[BREED %in% breed_filter]
-
-dogs2020 <- dogs2020[BREEDTYPE == "K"]
-#dogs2020 <- dogs2020[BREEDTYPE == "I"]
-
-# k nearest neighbours template
 
 # color recode
 a <- str_split(dogs2020$COLOR_DOG, "/")
@@ -60,23 +29,55 @@ dogs2020$BREED <- as.numeric(as.factor(dogs2020$BREED))
 
 
 
+############################################################
+# testing if grouping is possible with reasonable accuracy #
+############################################################
 
+# count how many people own every breed.
+breed_filter <- data.table(aggregate(OWNER_ID ~ BREED, data = dogs2020, FUN = function(x){NROW(x)}))
 
-#https://www.edureka.co/blog/knn-algorithm-in-r/
-#https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/factor
-# for labeling for using text in model.
+#renaming
+setnames(breed_filter, old = c("OWNER_ID")
+         , new = c("NUMBER_OWNERS"))
+
+# sorting by number of owners
+breed_filter <- breed_filter[order(-rank(NUMBER_OWNERS),)]
+
+# calculating values for grouping
+owners_sum <- sum(breed_filter$NUMBER_OWNERS)
+number_groups <- 6
+groupsize <- round(owners_sum / number_groups)
+
+# adding grouping variable
+breed_filter[,group:=0]
+
+# in any situation first value is group 1
+breed_filter$group[1] <- 1
+
+# assigning groups
+for (i in 2:nrow(breed_filter)) {
+  if (sum(breed_filter[group == breed_filter$group[i-1], NUMBER_OWNERS]) > groupsize){
+    breed_filter$group[i] <- breed_filter$group[i-1]+1
+  } else {
+    breed_filter$group[i] <- breed_filter$group[i-1]
+  }
+}
+
+# transfer grouping to original dataset
+dogs2020 <- merge(dogs2020, breed_filter[,c("BREED", "group")], by = "BREED", all.x = T)
+
 
 #data separation
 dat.d <- sample(1:nrow(dogs2020),size=nrow(dogs2020)*0.7,replace = FALSE) #random selection of 70% data.
 
-# train.dogs <- dogs2020[dat.d, c("DISTRICT_NAME", "YOB_DOG", "AGE", "SEX", "SEX_DOG", "COLOR_DOG")] # 70% training data
-# test.dogs <- dogs2020[-dat.d,c("DISTRICT_NAME", "YOB_DOG", "AGE", "SEX", "SEX_DOG", "COLOR_DOG")] # remaining 30% test data
+train.dogs <- dogs2020[dat.d, c("DISTRICT_NAME", "YOB_DOG", "AGE", "SEX", "SEX_DOG", "COLOR_DOG")] # 70% training data
+test.dogs <- dogs2020[-dat.d,c("DISTRICT_NAME", "YOB_DOG", "AGE", "SEX", "SEX_DOG", "COLOR_DOG")] # remaining 30% test data
 
 # train.dogs <- dogs2020[dat.d, c("DISTRICT_NAME", "YOB_DOG", "AGE", "SEX", "SEX_DOG")] # 70% training data
 # test.dogs <- dogs2020[-dat.d,c("DISTRICT_NAME", "YOB_DOG", "AGE", "SEX", "SEX_DOG")] # remaining 30% test data
 
-train.dogs <- dogs2020[dat.d, c("COLOR_DOG")] # 70% training data
-test.dogs <- dogs2020[-dat.d,c("COLOR_DOG")] # remaining 30% test data
+# train.dogs <- dogs2020[dat.d, c("COLOR_DOG")] # 70% training data
+# test.dogs <- dogs2020[-dat.d,c("COLOR_DOG")] # remaining 30% test data
 
 # train.dogs <- dogs2020[dat.d, c("DISTRICT_NAME", "AGE", "SEX")] # 70% training data
 # test.dogs <- dogs2020[-dat.d,c("DISTRICT_NAME", "AGE", "SEX")] # remaining 30% test data
@@ -84,8 +85,12 @@ test.dogs <- dogs2020[-dat.d,c("COLOR_DOG")] # remaining 30% test data
 # train.dogs_labels <- dogs2020[dat.d,BREEDTYPE]
 # test.dogs_labels <-dogs2020[-dat.d,BREEDTYPE]
 
-train.dogs_labels <- dogs2020[dat.d,BREED]
-test.dogs_labels <-dogs2020[-dat.d,BREED]
+# train.dogs_labels <- dogs2020[dat.d,BREED]
+# test.dogs_labels <-dogs2020[-dat.d,BREED]
+
+train.dogs_labels <- dogs2020[dat.d,group]
+test.dogs_labels <-dogs2020[-dat.d,group]
+
 
 #aprox k value
 k_value <-  sqrt(nrow(dogs2020))
@@ -97,3 +102,26 @@ ACC.test <- 100 * sum(test.dogs_labels == knn.test)/NROW(test.dogs_labels)
 table(knn.test ,test.dogs_labels)
 
 ACC.test
+
+# nope grouping is not possible
+
+# what about direct prediction?
+train.dogs_labels <- dogs2020[dat.d,BREED]
+test.dogs_labels <-dogs2020[-dat.d,BREED]
+
+
+knn.test <- knn(train=train.dogs, test=test.dogs, cl=train.dogs_labels, k=k_value)
+
+ACC.test <- 100 * sum(test.dogs_labels == knn.test)/NROW(test.dogs_labels)
+
+table(knn.test ,test.dogs_labels)
+
+ACC.test
+
+# nope too...
+
+# reasonable would be to throw away every breed that comes less than 100 times.
+
+# code
+
+# result is better, but still follows the distribution.

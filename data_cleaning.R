@@ -31,10 +31,11 @@ setnames(dogs2020, old = c("HALTER_ID", "ALTER", "GESCHLECHT", "STADTQUARTIER", 
                   , new = c("OWNER_ID", "AGE", "SEX", "DISTRICT", "DISTRICT_BIG", "BREED", "BREED_TYPE", "YOB_DOG", "SEX_DOG", "COLOR_DOG"))
 
 
-#couse stadtquartier is more granular district segemntation than stadtkreis, and not all datasets
-# can be merged by stadtkreis we used it
-# however it is hard to match on a map
-# dogs dataset does not contain normal names. so we use wealth dataset to extract them
+# couse stadtquartier is more granular district segmentation than stadtkreis, and not all datasets
+# can be merged by stadtkreis we used it. however it is hard to match on a map
+# dogs dataset does not contain normal district names. so we use wealth dataset to extract them
+# from zurich city databases
+
 district_names <- data.table(read_csv("data_sources/wir100od1004.csv"))
 district_names <- unique(district_names[, QuarSort, QuarLang])
 
@@ -55,15 +56,15 @@ rm(district_names)
 # https://data.stadt-zuerich.ch/dataset/fd_median_einkommen_quartier_od1003
 wealth <- data.table(read_csv("data_sources/wir100od1004.csv"))
 
-# we dont have date for 2020, the freshest data is on 2017
+# we dont have data for 2020, the freshest data is on 2017
 wealth <- wealth[SteuerJahr == 2017,]
-#creating new column where to store average
+# creating new column where to store average
 wealth[, wealth50 := SteuerVermoegen_p50]
 # replacing family values in this column with same devided by 2 for normalization
 wealth$wealth50[wealth$SteuerTarifSort == 1] <- wealth$wealth50[wealth$SteuerTarifSort == 1]/2
 
 #aggregating data for family status
-#new table          old table   select mean of incomep50 (ignore NA), aggregate it by Quartal
+#new table      old table, select mean of incomep50 (ignore NA), aggregate it by Quartal
 wealth_merge <- wealth[,mean(wealth50, na.rm = T), by=QuarSort]
 
 #leaving only quartals that have dogs in them
@@ -88,7 +89,7 @@ rm(wealth, wealth_merge)
 # https://data.stadt-zuerich.ch/dataset/fd_median_vermoegen_quartier_od1004
 income <- data.table(read_csv("data_sources/wir100od1003.csv"))
 
-# we dont have date for 2020, the freshest data is on 2017
+# we dont have data for 2020, the freshest data is on 2017
 income <- income[SteuerJahr == 2017,]
 #creating new column where to store average
 income[, incomep50 := SteuerEInkommen_p50]
@@ -96,7 +97,7 @@ income[, incomep50 := SteuerEInkommen_p50]
 income$incomep50[income$SteuerTarifSort == 1] <- income$incomep50[income$SteuerTarifSort == 1]/2
 
 #aggregating data for family status
-#new table          old table   select mean of incomep50 (ignore NA), aggregate it by Quartal
+#new table      old table, select mean of incomep50 (ignore NA), aggregate it by Quartal
 income_merge <- income[,mean(incomep50, na.rm = T), by=QuarSort]
 
 #leaving only quartals that have dogs in them
@@ -117,26 +118,35 @@ rm(income, income_merge)
 # IMPORTING EDUCATION #
 #######################
 
-education <- data.table(read_csv("data_sources/bil101od1012 (2).csv")) 
+# source
+# https://data.stadt-zuerich.ch/dataset/bfs_bev_bildungsstand_statquartier_seit1970_od1012
+education <- data.table(read_csv("data_sources/bil101od1012 (2).csv"))
+
 ### long to wide education reshape
 education <-dcast(education, RaumSort ~ Bildungsstand, value.var = "AntBev")
+
 #renaming for merge
 setnames(education, old = c("RaumSort", "Obligatorische Schule", "Sekundarstufe II", "Tertiärstufe"), 
                     new = c("DISTRICT", "BASIC_SCHOOL_PERCENTAGE", "GYMNASIUM_PERCENTAGE", "UNIVERSITY_PERCENTAGE"))
 
+# merge into main data.table
 dogs2020 <- merge(dogs2020, education, by = "DISTRICT", all.x = T)
 
+# remove not needed variables
 rm(education)
 
 #######################
 # IMPORTING HOME_TYPE #
 #######################
 
+# source
+# https://data.stadt-zuerich.ch/dataset/bau_best_geb_whg_bev_gebaeudeart_quartier_seit2008/resource/3850add1-264c-4993-98cd-d8a9ba87ee25
 home_type <- data.table(read_csv("data_sources/bau_best_geb_whg_bev_gebaeudeart_quartier_seit2008.csv")) 
 
 # we dont have date for 2020, the freshest data is on 2019
 home_type <- home_type[Jahr == 2019,]
 
+# Counting sum number of every type of building (less granular)
 home_type <- home_type[, sum(AnzGeb), by = list(QuarSort,GbdArtPubName)]
 
 #renaming for merge
@@ -156,13 +166,14 @@ home_type[, Unbekannt:=NULL]
 #merging
 dogs2020 <- merge(dogs2020, home_type, by = "DISTRICT", all.x = T)
 
+# removing not needed variables
 rm(home_type)
 
 ########################
 # IMPORTING POPULATION #
 ########################
 
-# Import Population Figures
+# source
 # https://www.stadt-zuerich.ch/prd/de/index/statistik/themen/bevoelkerung/bevoelkerungsentwicklung/kreise-und-quartiere.html#daten
 pop_per_district <- data.table(read_csv("data_sources/2019-Table_1.csv"))
 
@@ -175,10 +186,10 @@ pop_per_district[1,1] <- "DISTRICT_NAME"
 # Set Column Names
 setnames(pop_per_district, as.character(pop_per_district[1, ]))
 
-# Remove Duplicate Rows
+# Remove first row, in order to get rid of pseudo names
 pop_per_district <- pop_per_district[2:nrow(pop_per_district)]
 
-# This Reg-Ex Matching Function Removes all Whitespace (bad data design)
+# This Reg-Ex Matching Function Removes all Whitespaces and not only conventional ones (bad data design)
 pop_per_district[,2:5] <- data.table(apply(pop_per_district[,2:5],2,function(x)gsub('\\s+', '',x)))
 
 # Join By District Name (Perfect Match, No N/A's)
@@ -188,7 +199,7 @@ dogs2020 <- merge(dogs2020, pop_per_district, by = "DISTRICT_NAME", all.x = T)
 setnames(dogs2020, old = c("Total", "Schweizer/-innen", "Ausländer/-innen", "Anteil ausländische\nBevölkerung (%)")
          , new = c("TOTAL_POPULATION", "SWISS_POPULATION", "FOREIGN_POPULATION", "FOREIGN_POPULATION_PERCENTAGE"))
 
-# Then we cast as a numeric to prepare for mathematical operations
+# Then we cast as a numeric to prepare for mathematical operations that come later
 dogs2020$TOTAL_POPULATION <- as.numeric(dogs2020$TOTAL_POPULATION)
 dogs2020$SWISS_POPULATION   <- as.numeric(dogs2020$SWISS_POPULATION)
 dogs2020$FOREIGN_POPULATION   <- as.numeric(dogs2020$FOREIGN_POPULATION  )
@@ -198,7 +209,9 @@ dogs2020$FOREIGN_POPULATION_PERCENTAGE   <- as.numeric(dogs2020$FOREIGN_POPULATI
 #     TRANSLATION     #
 #######################
 
-### package fix
+# package fix (Initial yandex package has flaws)
+# this solution was found in github
+# source: https://github.com/mukul13/RYandexTranslate/issues/2
 translate = function (api_key, text = "", lang = "") 
 {
   url = "https://translate.yandex.net/api/v1.5/tr.json/translate?"
@@ -216,31 +229,49 @@ translate = function (api_key, text = "", lang = "")
   d
 }
 
+# yandex translater need api, this is API connected to my personal account. (Andris)
+# please dont use it elsewhere
 api_key <- "trnsl.1.1.20200515T134653Z.f9fb709ac3e94036.783aefa609692b463a79b5827d5c0e7f2d037a8c"
 
+# List of columns in which we nat to translate contents
 column_list <- c("BREED", "COLOR_DOG")
 
+# looping through columns
 for (column_names in column_list) {
+  # get all unique values in the coresponding columns,
+  # cause values repeat, it speeds up translation with mass replacing one translation
+  # and not repeating translation for every word, even if it was translated before.
   unique_values <- unique(dogs2020[,get(column_names)])
-for (unique_num in 1:length(unique_values)) {
   
-  #debug
-  print(column_names)
-  print(paste(unique_num, " out of ", length(unique_values)))
+  # looping through unique values to be translated
+  for (unique_num in 1:length(unique_values)) {
+    
+    #debug
+    print(column_names)
+    print(paste(unique_num, " out of ", length(unique_values)))
+    
+    # translating code: This is a data.table synthaxis code.
+    # what table we use
+    dogs2020[
+      # select all rows where value is equal to current unique value
+      # left part "get" is needed in order to use dynamic column_names
+      dogs2020[,get(column_names)] == unique_values[unique_num],
+      # replace old value with translated one
+      # left part is "eval" is needed in order to use dynamic column_names
+      # right part is a yandex translater function, providing api_key and text to be translated
+      eval(column_names) := translate(api_key,text=unique_values[unique_num],
+      # specify language pare and translation direction                                
+      lang="de-en"
+      # extract only output text from the return given by yandex
+      )$text]
   
-  
-  dogs2020[dogs2020[,get(column_names)] == unique_values[unique_num],
-           eval(column_names) := translate(api_key,text=unique_values[unique_num],lang="de-en")$text]
+  }
+}
 
-}}
-
+# manually replace sex and sex_dog variable to match language conventions for sex abbriviations
 dogs2020[SEX == "w",SEX := "f"]
 dogs2020[SEX_DOG == "w",SEX_DOG := "f"]
 
+# saving Rdata image in order to use in other code parts without the need of executing this
+# rather slow (due to translation) code part.
 save.image("dogs.Rdata")
-
-###################
-# saving to excel #
-###################
-
-#write.xlsx(dogs2020, "dogs2020_merged.xlsx")
