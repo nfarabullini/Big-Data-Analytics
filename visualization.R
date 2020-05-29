@@ -96,29 +96,16 @@ list_districts <- list(
 avg_wealth <- unlist(lapply(seq_len(length(list_districts)), function (z) {
   mean(unlist(lapply(list_districts[[z]], function (y) {
     mean(unlist(lapply(y, function (x) {
-      dogs2020[which(x == dogs2020$DISTRICT_NAME),]$`wealth (T. CHF)`
+      dogs2020[which(x == dogs2020$DISTRICT_NAME),]$WEALTH_T_CHF
     })))
   })))
 }))
 
-bins <- c(0,50, 100, 500, 1000, Inf)
-pal <- colorBin("YlOrRd", domain = avg_wealth, bins = bins)
+bins <- c(0, 25, 30, 50, 60, 75, 100, 120, 150, 175)
+pal <- colorBin("Greens", domain = avg_wealth, bins = bins)
 
-# color <- c("white",
-#            "cyan",
-#            "chocolate",
-#            "blue", 
-#            "brown",
-#            "darkorchid",
-#            "gold",
-#            "yellowgreen",
-#            "lightpink",
-#            "seagreen",
-#            "orangered",
-#            "gray")
-# pal <- colorNumeric("OrRd", length(zh_rg$kname))
 leaflet(zh_rg) %>%
   addPolygons(fillColor = ~pal(unlist(avg_wealth)), weight = 2, fillOpacity = 0.9, 
               opacity = 1) %>%
   addTiles() %>% 
-  addLegend(colors = pal(unlist(avg_wealth)), labels = as.list(zh_rg$kname), title = "Zurich Districts")
+  addLegend(colors = pal(unlist(avg_wealth)), labels = zh_rg$kname, title = "Zurich Districts", opacity = 1)
