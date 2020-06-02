@@ -190,14 +190,19 @@ setnames(pop_per_district, as.character(pop_per_district[1, ]))
 pop_per_district <- pop_per_district[2:nrow(pop_per_district)]
 
 # This Reg-Ex Matching Function Removes all Whitespaces and not only conventional ones (bad data design)
-pop_per_district[,2:5] <- data.table(apply(pop_per_district[,2:5],2,function(x)gsub('\\s+', '',x)))
+pop_per_district[,2:5] <- data.table(apply(pop_per_district[,2:5], 2, function(x) gsub('[^0-9.]', '', x)))
 
 # Join By District Name (Perfect Match, No N/A's)
 dogs2020 <- merge(dogs2020, pop_per_district, by = "DISTRICT_NAME", all.x = T)
 
+# removing not needed variables
+rm(pop_per_district)
+
 # Renaming
-setnames(dogs2020, old = c("Total", "Schweizer/-innen", "Ausländer/-innen", "Anteil ausländische\nBevölkerung (%)")
-         , new = c("TOTAL_POPULATION", "SWISS_POPULATION", "FOREIGN_POPULATION", "FOREIGN_POPULATION_PERCENTAGE"))
+setnames(dogs2020,
+         old = c("Total", "Schweizer/-innen", "Ausländer/-innen", "Anteil ausländische\nBevölkerung (%)"),
+         new = c("TOTAL_POPULATION", "SWISS_POPULATION", "FOREIGN_POPULATION", "FOREIGN_POPULATION_PERCENTAGE")
+)
 
 # Then we cast as a numeric to prepare for mathematical operations that come later
 dogs2020$TOTAL_POPULATION <- as.numeric(dogs2020$TOTAL_POPULATION)
