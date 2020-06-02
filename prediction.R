@@ -1,6 +1,7 @@
 library(class)
 library(psych)
 library(e1071)
+library(plyr)
 
 load('dogs.RData')
 
@@ -105,16 +106,16 @@ summary(linearModIncome)
 # Investigation 2 - Subset Data        #
 ########################################
 
+# Subset our Data
 dog_owner_chars <- subset(dogs2020, select=c("BREED", "BREED_TYPE", "YOB_DOG", "SEX_DOG", "COLOR_DOG", 
                                              "OWNER_ID", "AGE", "SEX", "WEALTH_T_CHF", "INCOME_T_CHF", 
                                              "DISTRICT_NAME"))
+
+# Remove Outlier Breeds (<10 Entries)
+dog_owner_chars <- ddply(dog_owner_chars, "BREED", function(d) {if(nrow(d)>9) d else NULL})
 
 #############################################
 # Investigation 2 - Naive Bayes Model       #
 #############################################
 
 nB <- naiveBayes(dog_owner_chars$BREED ~ dog_owner_chars$AGE + dog_owner_chars$SEX, data=dog_owner_chars, laplace = 0, na.action = na.pass)
-
-owner_chars <- subset(dogs2020, select=c("AGE", "SEX"))
-predict(nB, owner_chars, type = c("class", "raw"), threshold = 0.001, eps = 0)
-
