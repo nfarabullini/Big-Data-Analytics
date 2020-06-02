@@ -119,3 +119,10 @@ dog_owner_chars <- ddply(dog_owner_chars, "BREED", function(d) {if(nrow(d)>9) d 
 #############################################
 
 nB <- naiveBayes(dog_owner_chars$BREED ~ dog_owner_chars$AGE + dog_owner_chars$SEX, data=dog_owner_chars, laplace = 0, na.action = na.pass)
+
+df_m_11_20 <- data.frame(AGE="11-20", SEX="m")
+df_f_11_20 <- data.frame(AGE="11-20", SEX="f")
+
+predict_m_11_20 <- predict(nB, df_m_11_20, type="raw")
+predict_f_11_20 <- predict(nB, df_f_11_20, type="raw")
+
