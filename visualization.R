@@ -29,7 +29,7 @@ pie(breeds$total, dogs2020$BREED, main="All ages")
 # Delete generated table
 rm(breeds)
 
-zh_rg <- readOGR("/home/mirai_user/Downloads/stzh.adm_stadtkreise_v.json")
+zh_rg <- readOGR("./data_sources/stzh.adm_stadtkreise_v.json")
 
 # group sub-districts together
 list_districts <- list(
