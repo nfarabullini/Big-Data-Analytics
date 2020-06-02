@@ -30,21 +30,82 @@ pie(breeds$total, dogs2020$BREED, main="All ages")
 rm(breeds)
 
 zh_rg <- readOGR("/home/mirai_user/Downloads/stzh.adm_stadtkreise_v.json")
-color <- c("white",
-           "cyan",
-           "chocolate",
-           "blue", 
-           "brown",
-           "darkorchid",
-           "gold",
-           "yellowgreen",
-           "lightpink",
-           "seagreen",
-           "orangered",
-           "gray")
-# pal <- colorNumeric("OrRd", length(zh_rg$kname))
+
+# group sub-districts together
+list_districts <- list(
+  District_1 <- c(
+    "Rathaus",
+    "Hochschulen",
+    "Lindenhof",
+    "City"
+  ),
+  District_2	<- c(
+    "Wollishofen",
+    "Leimbach",
+    "Enge"
+  ),
+  District_3 <- c(
+    "Alt-Wiedikon",
+    "Friesenberg",
+    "Sihlfeld"
+  ),
+  District_4 <- c(
+    "Werd",
+    "Langstrasse",
+    "Hard"
+  ),
+  District_5 <- c(
+    "Gewerbeschule",
+    "Escher Wyss"
+  ),
+  District_6	<- c(
+    "Unterstrass",
+    "Oberstrass",
+    "Unterstrass"
+  ),
+  District_7 <- c(		
+    "Fluntern",
+    "Hottingen",
+    "Hirslanden",
+    "Witikon"
+  ),
+  District_8 <- c(
+    "Seefeld",
+    "Mühlebach",
+    "Weinegg"
+  ),
+  District_9 <- c(	
+    "Albisrieden",
+    "Altstetten"
+  ),
+  District_10 <- c(	
+    "Höngg",
+    "Wipkingen"
+  ),
+  District_11 <- c(	
+    "Affoltern",
+    "Oerlikon",
+    "Seebach"
+  ),
+  District_12 <- c(
+    "Saatlen",
+    "Schwamendingen-Mitte",
+    "Hirzenbach"
+  )
+)
+avg_wealth <- unlist(lapply(seq_len(length(list_districts)), function (z) {
+  mean(unlist(lapply(list_districts[[z]], function (y) {
+    mean(unlist(lapply(y, function (x) {
+      dogs2020[which(x == dogs2020$DISTRICT_NAME),]$WEALTH_T_CHF
+    })))
+  })))
+}))
+
+bins <- c(0, 25, 30, 50, 60, 75, 100, 120, 150, 175)
+pal <- colorBin("Greens", domain = avg_wealth, bins = bins)
+
 leaflet(zh_rg) %>%
-  addPolygons(color = color, fill = TRUE, fillColor = color, weight = 2, fillOpacity = 0.9, 
+  addPolygons(fillColor = ~pal(unlist(avg_wealth)), weight = 2, fillOpacity = 0.9, 
               opacity = 1) %>%
   addTiles() %>% 
-  addLegend(colors = color, labels = as.list(zh_rg$kname), title = "Zurich Districts")
+  addLegend(colors = pal(unlist(avg_wealth)), labels = zh_rg$kname, title = "Zurich Districts", opacity = 1)
