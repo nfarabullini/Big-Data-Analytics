@@ -2,6 +2,9 @@ library(class)
 library(psych)
 library(e1071)
 library(plyr)
+library(data.table)
+
+rm(list=ls())
 
 load('dogs.RData')
 
@@ -117,12 +120,16 @@ dog_owner_chars <- ddply(dog_owner_chars, "BREED", function(d) {if(nrow(d)>9) d 
 #############################################
 # Investigation 2 - Naive Bayes Model       #
 #############################################
+setDT(dog_owner_chars)
+dog_owner_chars <- dog_owner_chars[1:100, c("BREED", "AGE", "SEX")]
 
-nB <- naiveBayes(dog_owner_chars$BREED ~ dog_owner_chars$AGE + dog_owner_chars$SEX, data=dog_owner_chars, laplace = 0, na.action = na.pass)
+nB <- naiveBayes(BREED ~ ., data=dog_owner_chars, laplace = 0, na.action = na.pass)
 
 df_m_11_20 <- data.frame(AGE="11-20", SEX="m")
 df_f_11_20 <- data.frame(AGE="11-20", SEX="f")
 
-predict_m_11_20 <- predict(nB, df_m_11_20, type="raw")
+
+
+predict_m_11_20 <- predict(nB, dog_owner_chars, type = "raw")
 predict_f_11_20 <- predict(nB, df_f_11_20, type="raw")
 
