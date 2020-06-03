@@ -99,7 +99,7 @@ linearModCombi <- lm(PERCENT_DOG_OWNERS ~ WEALTH_T_CHF + INCOME_T_CHF, data=ddc)
 summary(linearModIncome)
 
 ########################
-# INVESTIGATION 2 - CB #
+# INVESTIGATION 2      #
 ########################
 
 # Now we will start again from the beginning 
@@ -115,55 +115,66 @@ dog_owner_chars <- subset(dogs2020, select=c("BREED", "BREED_TYPE", "YOB_DOG", "
                                              "OWNER_ID", "AGE", "SEX", "WEALTH_T_CHF", "INCOME_T_CHF", 
                                              "DISTRICT_NAME"))
 
-# Remove Outlier Breeds (<10 Entries)
-dog_owner_chars <- ddply(dog_owner_chars, "BREED", function(d) {if(nrow(d)>9) d else NULL})
+# Remove Outlier Breeds (<20 Entries)
+dog_owner_chars <- ddply(dog_owner_chars, "BREED", function(d) {if(nrow(d)>19) d else NULL})
+# A helper data frame with Unique Breeds
+unique_common_breeds <- unique(subset(dog_owner_chars, select=c("BREED")))
 
 #############################################
 # Investigation 2 - Naive Bayes Model       #
 #############################################
 setDT(dog_owner_chars)
-dog_owner_chars <- dog_owner_chars[1:100, c("BREED", "AGE", "SEX")]
 
-nB <- naiveBayes(BREED ~ ., data=dog_owner_chars, laplace = 0, na.action = na.pass)
+# Needs to Be Replaced with Whole Data Set No? Not Just first 100
+dog_owner_chars <- subset(dog_owner_chars, select=c("BREED", "AGE", "SEX"))
 
-# convert nB into a data frame
-nB_df_age <- as.data.frame(nB$tables$`dog_owner_chars$AGE`)
-# select the breed
-breed_name <- "Beagle"
-breed <- which(nB_df_age$Y == breed_name)
-# create data frame for breed values
-d_age <- data.frame(x = nB_df_age[breed,]$dog_owner_chars.AGE, y = nB_df_age[breed,]$Freq)
-# create plot
-ggplot(d_age, aes(x = x, y = y, group = 1)) + geom_point() + geom_line() + 
-  labs(x = "Age group", y = "Frequency", title = paste(breed_name, "frequency per age group"))
+# Naive Bayes Implementation
+nb <- naiveBayes(BREED ~ ., data=dog_owner_chars, laplace = 0, na.action = na.pass)
+
+# convert nb into a data frame
+nb_df_age <- as.data.frame(nb$tables$AGE)
+
+for (i in 1:length(unique_common_breeds$BREED)) {
+  breed_name <- unique_common_breeds$BREED[i]
+  breed <- which(nb_df_age$Y == breed_name)
+  # create data frame for breed values
+  d_age <- data.frame(x = nb_df_age[breed,]$AGE, y = nb_df_age[breed,]$Freq)
+  # create plot
+  plot <- ggplot(d_age, aes(x = x, y = y, group = 1)) + geom_point() + geom_line() + 
+    labs(x = "Age group", y = "Frequency", title = paste(breed_name, "frequency per age group"))
+  print(plot)
+}
 
 # similar approach for sex
-nB_df_sex <- as.data.frame(nB$tables$`dog_owner_chars$SEX`)
-# select sex
-breed_name <- "Beagle"
-breed <- which(nB_df_sex$Y == breed_name)
-# create data frame for sex values
-# geom_bar() in ggplot2 takes all of the values that one wants to plot in the bar plot and automatically calculates teh frquency. 
-# Here the frequency is already given. 
-# A workaround is to create a data frame that replicates the frequency value with respect the number given for frequency, such that the right amount of values is output
-rep_freq_f <- cbind("x" = rep(nB_df_sex[breed,]$Freq[1], nB_df_sex[breed,]$Freq[1]*100),
-                    "y" = rep("f", nB_df_sex[breed,]$Freq[1]*100))
-rep_freq_m <- cbind("x" = rep(nB_df_sex[breed,]$Freq[2], nB_df_sex[breed,]$Freq[2]*100),
-                    "y" = rep("m", nB_df_sex[breed,]$Freq[2]*100))
-freq <- as.data.frame(rbind(rep_freq_f, rep_freq_m))
-# create plot
-ggplot(freq, aes(x = y)) + geom_bar() + 
-  labs(x = "Age group", y = "Frequency", title = paste(breed_name, "frequency per sex")) 
+nb_df_sex <- as.data.frame(nb$tables$SEX)
 
+for (i in 1:length(unique_common_breeds$BREED)) {
+  breed_name <- unique_common_breeds$BREED[i]
+  breed <- which(nb_df_sex$Y == breed_name)
+  # create data frame for sex values
+  # geom_bar() in ggplot2 takes all of the values that one wants to plot in the bar plot and automatically calculates teh frquency. 
+  # Here the frequency is already given. 
+  # A workaround is to create a data frame that replicates the frequency value with respect the number given for frequency, such that the right amount of values is output
+  rep_freq_f <- cbind("x" = rep(nb_df_sex[breed,]$Freq[1], nb_df_sex[breed,]$Freq[1]*100),
+                      "y" = rep("f", nb_df_sex[breed,]$Freq[1]*100))
+  rep_freq_m <- cbind("x" = rep(nb_df_sex[breed,]$Freq[2], nb_df_sex[breed,]$Freq[2]*100),
+                      "y" = rep("m", nb_df_sex[breed,]$Freq[2]*100))
+  freq <- as.data.frame(rbind(rep_freq_f, rep_freq_m))
+  # create plot
+  plot <- ggplot(freq, aes(x = y)) + geom_bar() + 
+    labs(x = "Age group", y = "Frequency", title = paste(breed_name, "frequency per sex")) 
+  print(plot)
+}
 
 # general breed plot 
 ggplot(d_age, aes(x = x.dog_owner_chars.AGE, y = y.Freq)) + geom_point()
 
-df_m_11_20 <- data.frame(AGE="11-20", SEX="m")
-df_f_11_20 <- data.frame(AGE="11-20", SEX="f")
 
+#Remove 
+#df_m_11_20 <- data.frame(AGE="11-20", SEX="m")
+#df_f_11_20 <- data.frame(AGE="11-20", SEX="f")
 
-
-predict_m_11_20 <- predict(nB, dog_owner_chars, type = "raw")
-predict_f_11_20 <- predict(nB, df_f_11_20, type="raw")
+#Remove
+#predict_m_11_20 <- predict(nb, dog_owner_chars, type = "raw")
+#predict_f_11_20 <- predict(nb, df_f_11_20, type="raw")
 
