@@ -3,6 +3,7 @@ library(psych)
 library(e1071)
 library(plyr)
 library(data.table)
+library(ggplot2)
 
 rm(list=ls())
 
@@ -45,7 +46,7 @@ ddc$PERCENT_DOG_OWNERS <- ddc$TOTAL_UNIQUE_OWNERS / ddc$TOTAL_POPULATION
 
 # Compute Total Building Count for Percentages % of Total Buildings and Residential Buildings
 ddc$TOTAL_BUILDINGS <- ddc$SINGLE_FAMILY_HOMES + ddc$INFRASTRUCTURE_BUILDINGS + ddc$SMALL_BUILDINGS
-                       + ddc$COMMERCIAL_BUILDINGS + ddc$APARTMENTS + ddc$FACTORIES_AND_WAREHOUSES + ddc$SPECIAL_ACCOMODATION
++ ddc$COMMERCIAL_BUILDINGS + ddc$APARTMENTS + ddc$FACTORIES_AND_WAREHOUSES + ddc$SPECIAL_ACCOMODATION
 ddc$TOTAL_RESIDENCES <- ddc$SINGLE_FAMILY_HOMES + ddc$APARTMENTS + ddc$SPECIAL_ACCOMODATION
 
 ddc$SINGLE_FAMILY_HOMES_PERCENTAGE <- ddc$SINGLE_FAMILY_HOMES / ddc$TOTAL_BUILDINGS
@@ -124,6 +125,39 @@ setDT(dog_owner_chars)
 dog_owner_chars <- dog_owner_chars[1:100, c("BREED", "AGE", "SEX")]
 
 nB <- naiveBayes(BREED ~ ., data=dog_owner_chars, laplace = 0, na.action = na.pass)
+
+# convert nB into a data frame
+nB_df_age <- as.data.frame(nB$tables$`dog_owner_chars$AGE`)
+# select the breed
+breed_name <- "Beagle"
+breed <- which(nB_df_age$Y == breed_name)
+# create data frame for breed values
+d_age <- data.frame(x = nB_df_age[breed,]$dog_owner_chars.AGE, y = nB_df_age[breed,]$Freq)
+# create plot
+ggplot(d_age, aes(x = x, y = y, group = 1)) + geom_point() + geom_line() + 
+  labs(x = "Age group", y = "Frequency", title = paste(breed_name, "frequency per age group"))
+
+# similar approach for sex
+nB_df_sex <- as.data.frame(nB$tables$`dog_owner_chars$SEX`)
+# select sex
+breed_name <- "Beagle"
+breed <- which(nB_df_sex$Y == breed_name)
+# create data frame for sex values
+# geom_bar() in ggplot2 takes all of the values that one wants to plot in the bar plot and automatically calculates teh frquency. 
+# Here the frequency is already given. 
+# A workaround is to create a data frame that replicates the frequency value with respect the number given for frequency, such that the right amount of values is output
+rep_freq_f <- cbind("x" = rep(nB_df_sex[breed,]$Freq[1], nB_df_sex[breed,]$Freq[1]*100),
+                    "y" = rep("f", nB_df_sex[breed,]$Freq[1]*100))
+rep_freq_m <- cbind("x" = rep(nB_df_sex[breed,]$Freq[2], nB_df_sex[breed,]$Freq[2]*100),
+                    "y" = rep("m", nB_df_sex[breed,]$Freq[2]*100))
+freq <- as.data.frame(rbind(rep_freq_f, rep_freq_m))
+# create plot
+ggplot(freq, aes(x = y)) + geom_bar() + 
+  labs(x = "Age group", y = "Frequency", title = paste(breed_name, "frequency per sex")) 
+
+
+# general breed plot 
+ggplot(d_age, aes(x = x.dog_owner_chars.AGE, y = y.Freq)) + geom_point()
 
 df_m_11_20 <- data.frame(AGE="11-20", SEX="m")
 df_f_11_20 <- data.frame(AGE="11-20", SEX="f")
