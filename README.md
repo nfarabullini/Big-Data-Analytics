@@ -7,7 +7,7 @@ Project Group 23: Corey Bothwell, Nicoletta Farabullini, Jacob Gelling, Andris P
 Through use of data freely available from Stadt Zürich Open Data, we analyse dogs registered in Zürich and combine this data with other information available about the districts (kreis) that make up Zürich. We perform exploratory analysis using a number of visualisations and a model is developed in which we predict dog breed given related data.
 
 ### Notebook:
-The included jupyter notebook is an interactive  way to view our entire data pipeline from data acquisition through EDA and Model generation to our final takeaways
+The included jupyter notebook is an interactive  way to view our entire data pipeline from data aquisiont through EDA and Model generation to our final takeaways
 
 ### Configuration of Jupyter Notebook:
 
